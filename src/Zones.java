@@ -12,7 +12,7 @@ public class Zones {
      * Mission 4. Kosaraju. Returns zoneOf: zoneOf[cell] = number of the zone, numbers 0 .. zones-1.
      * Number the zones in the order in which the second pass finds them. That order is a topological order
      * of the zone graph: every slide between two zones goes from a smaller number to a larger number.
-     *
+     * <p>
      * Plan: 1) DFS on the slides, write the cells in the order in which they are finished (use a stack, not recursion);
      * 2) go through the cells from the last finished to the first; if a cell has no zone yet, DFS from it on the reversed
      * slides (slidesInto) and give every cell it reaches the next zone number.
@@ -35,8 +35,8 @@ public class Zones {
         int[] stackCell = new int[n];
         int[] stackNext = new int[n];
 
-        for(int start=0;start<n;start++){
-            if(visited[start]){
+        for (int start = 0; start < n; start++) {
+            if (visited[start]) {
                 continue;
             }
 
@@ -45,35 +45,35 @@ public class Zones {
             stackNext[top] = 0;
             visited[start] = true;
 
-            while(top>=0){
+            while (top >= 0) {
                 int cell = stackCell[top];
 
-                if (stackNext[top]<outgoing[cell].length){
+                if (stackNext[top] < outgoing[cell].length) {
                     int slide = outgoing[cell][stackNext[top]++];
                     int next = to[slide];
 
-                    if(!visited[next]){
+                    if (!visited[next]) {
                         visited[next] = true;
 
                         top++;
                         stackCell[top] = next;
                         stackNext[top] = 0;
                     }
-                } else{
+                } else {
                     order[orderSize++] = cell;
                     top--;
                 }
             }
         }
         int[] zoneOf = new int[n];
-        java.util.Arrays.fill(zoneOf,-1);
+        java.util.Arrays.fill(zoneOf, -1);
 
         int zoneCount = 0;
 
-        for(int i=orderSize-1;i>=0;i--){
+        for (int i = orderSize - 1; i >= 0; i--) {
             int start = order[i];
 
-            if(zoneOf[start] != -1){
+            if (zoneOf[start] != -1) {
                 continue;
             }
 
@@ -81,13 +81,13 @@ public class Zones {
             stackCell[top++] = start;
             zoneOf[start] = zoneCount;
 
-            while(top>0){
+            while (top > 0) {
                 int cell = stackCell[--top];
 
-                for(int slide : incoming[cell]){
+                for (int slide : incoming[cell]) {
                     int next = from[slide];
 
-                    if(zoneOf[next] == -1){
+                    if (zoneOf[next] == -1) {
                         zoneOf[next] = zoneCount;
                         stackCell[top++] = next;
                     }
@@ -108,6 +108,81 @@ public class Zones {
      */
     public static long[] routes(Input.Slides s, int[] zoneOf, int zoneCount) {
         // TODO
-        return new long[]{0, 0};
+        int[] from = s.from();
+        int[] to = s.to();
+        int[] time = s.time();
+        int m = s.count();
+
+        int[] outgoingCount = new int[zoneCount];
+
+        for (int i=0;i<m; i++){
+            int fromZone = zoneOf[from[i]];
+            int toZone = zoneOf[to[i]];
+
+            if(fromZone != toZone){
+                outgoingCount[fromZone]++;
+                }
+            }
+
+            int[][] outgoingSlides = new int[zoneCount][];
+
+            for (int z=0;z<zoneCount;z++){
+                outgoingSlides[z] = new int[outgoingCount[z]];
+            }
+
+            int[] position = new int[zoneCount];
+
+            for (int i=0;i<m;i++){
+                int fromZone = zoneOf[from[i]];
+                int toZone = zoneOf[to[i]];
+
+                if(fromZone != toZone){
+                    outgoingSlides[fromZone][position[fromZone]++] = i;
+                }
+            }
+
+            int[] stages = new int[zoneCount];
+
+            for (int z=0;z<zoneCount;z++){
+                stages[z] = 1;
+            }
+
+            long[] dist = new long[zoneCount];
+            java.util.Arrays.fill(dist,Long.MAX_VALUE);
+
+            int startZone = zoneOf[0];
+            int exitZone = zoneOf[s.n() - 1];
+
+            dist[startZone] = 0;
+
+            for(int z=0;z<zoneCount;z++){
+                for(int slide : outgoingSlides[z]){
+                    int nextZone = zoneOf[to[slide]];
+
+                    stages[nextZone] = Math.max(
+                            stages[nextZone],
+                            stages[z] + 1
+                    );
+
+                    if(dist[z] != Long.MAX_VALUE){
+                        long candidate = dist[z] + time[slide];
+
+                        if(candidate<dist[nextZone]){
+                            dist[nextZone] = candidate;
+                        }
+                    }
+                }
+            }
+
+            int flowStages = 0;
+
+            for (int z=0;z<zoneCount;z++){
+                flowStages = Math.max(flowStages,stages[z]);
+            }
+
+            return new long[]{flowStages, dist[exitZone]};
+        }
+
     }
-}
+
+
