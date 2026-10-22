@@ -20,7 +20,84 @@ public class Zones {
      */
     public static int[] kosaraju(Input.Slides s) {
         // TODO
-        return new int[s.n()];
+        int n = s.n();
+
+        int[] from = s.from();
+        int[] to = s.to();
+
+        int[][] outgoing = Graphs.slidesFrom(s);
+        int[][] incoming = Graphs.slidesInto(s);
+
+        boolean[] visited = new boolean[n];
+        int[] order = new int[n];
+        int orderSize = 0;
+
+        int[] stackCell = new int[n];
+        int[] stackNext = new int[n];
+
+        for(int start=0;start<n;start++){
+            if(visited[start]){
+                continue;
+            }
+
+            int top = 0;
+            stackCell[top] = start;
+            stackNext[top] = 0;
+            visited[start] = true;
+
+            while(top>=0){
+                int cell = stackCell[top];
+
+                if (stackNext[top]<outgoing[cell].length){
+                    int slide = outgoing[cell][stackNext[top]++];
+                    int next = to[slide];
+
+                    if(!visited[next]){
+                        visited[next] = true;
+
+                        top++;
+                        stackCell[top] = next;
+                        stackNext[top] = 0;
+                    }
+                } else{
+                    order[orderSize++] = cell;
+                    top--;
+                }
+            }
+        }
+        int[] zoneOf = new int[n];
+        java.util.Arrays.fill(zoneOf,-1);
+
+        int zoneCount = 0;
+
+        for(int i=orderSize-1;i>=0;i--){
+            int start = order[i];
+
+            if(zoneOf[start] != -1){
+                continue;
+            }
+
+            int top = 0;
+            stackCell[top++] = start;
+            zoneOf[start] = zoneCount;
+
+            while(top>0){
+                int cell = stackCell[--top];
+
+                for(int slide : incoming[cell]){
+                    int next = from[slide];
+
+                    if(zoneOf[next] == -1){
+                        zoneOf[next] = zoneCount;
+                        stackCell[top++] = next;
+                    }
+                }
+            }
+
+            zoneCount++;
+        }
+
+        return zoneOf;
     }
 
     /**
